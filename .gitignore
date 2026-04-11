@@ -1,0 +1,8 @@
+.env
+*.db
+*.db-shm
+*.db-wal
+__pycache__/
+*.py[cod]
+.venv/
+checkpoint_*.json

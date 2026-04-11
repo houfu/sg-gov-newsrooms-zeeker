@@ -1,0 +1,27 @@
+[project]
+name = "sg-gov-newsrooms"
+database = "sg-gov-newsrooms.db"
+title = "SG Government Newsrooms"
+description = "News and announcements from Singapore government ministries and judiciary — speeches, press releases, parliamentary replies, and announcements."
+license = "All rights reserved"
+license_url = "https://www.mlaw.gov.sg/terms-of-use/"
+source = "Singapore Government Ministries"
+source_url = "https://www.mlaw.gov.sg/news/"
+
+[resource.mlaw_news]
+description = "News and announcements from the Ministry of Law Singapore — press releases, speeches, parliamentary speeches, and announcements from 2026."
+sort_desc = "published_date"
+label_column = "title"
+facets = ["category"]
+size = 25
+fts_fields = ["title", "summary"]
+
+[resource.mlaw_news.columns]
+id = "Unique identifier (SHA-256 hash of source URL)"
+title = "Title of the news item or speech"
+published_date = "Publication date in ISO 8601 format (YYYY-MM-DD)"
+category = "Content type: press-releases, speeches, parliamentary-speeches, announcements"
+source_url = "URL to the original page on mlaw.gov.sg"
+summary = "AI-generated summary highlighting key policy and legal points (~100 words)"
+content_text = "Full extracted article text (hidden — query directly)"
+created_at = "Timestamp when this record was first imported"
