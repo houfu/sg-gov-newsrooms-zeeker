@@ -8,7 +8,7 @@ and judiciary websites.
 - **Database**: `sg-gov-newsrooms.db`
 - **Build trigger**: `bash /workspace/group/bin/build-zeeker sg-gov-newsrooms-zeeker [resource]`
 - **Cadence**: Daily at 11:00 AM SGT (host-side trigger)
-- **LLM**: Gemma4 26B via Ollama at `houfus-macbook-pro:11434` (Tailscale)
+- **LLM**: Gemma4 26B via Ollama (via Tailscale — host configured in env)
 - **GitHub Actions**: Disabled — using host-side build trigger
 
 ## Resources
@@ -27,7 +27,7 @@ and judiciary websites.
   `summary` (AI-generated, ~100 words) is the primary search/display field.
 
 **Environment variables needed**:
-- `LLM_BASE_URL` — Ollama base URL (e.g. `http://houfus-macbook-pro:11434/v1`)
+- `LLM_BASE_URL` — Ollama base URL (e.g. `http://your-ollama-host:11434/v1`)
 - `LLM_API_KEY` — placeholder (e.g. `not-needed` for Ollama)
 - `LLM_MODEL` — model name (e.g. `gemma4:26b`)
 - `S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` — deployment
