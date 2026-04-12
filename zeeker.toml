@@ -25,3 +25,22 @@ source_url = "URL to the original page on mlaw.gov.sg"
 summary = "AI-generated summary highlighting key policy and legal points (~100 words)"
 content_text = "Full extracted article text (hidden — query directly)"
 created_at = "Timestamp when this record was first imported"
+
+[resource.judiciary_news]
+description = "News, speeches, and media releases from the Singapore Judiciary — Supreme Court, State Courts, Family Justice Courts, and related tribunals. From 2026 onwards."
+sort_desc = "published_date"
+label_column = "title"
+facets = ["content_type", "courts"]
+size = 25
+fts_fields = ["title", "summary", "content_text"]
+
+[resource.judiciary_news.columns]
+id = "Unique identifier (SHA-256 hash of source URL)"
+title = "Title of the news item, speech, or media release"
+published_date = "Publication date in ISO 8601 format (YYYY-MM-DD)"
+content_type = "Type of item: Speech, Media Release, Media Advisory, etc."
+courts = "Pipe-separated court names (e.g. Supreme Court|State Courts)"
+source_url = "URL to the original page on judiciary.gov.sg"
+summary = "AI-generated summary highlighting key judicial developments (~100 words)"
+content_text = "Full extracted article text (hidden — query directly)"
+created_at = "Timestamp when this record was first imported"

@@ -40,12 +40,36 @@ and judiciary websites.
 - Retry: 3 attempts with exponential backoff (tenacity)
 
 **Adding more agencies**: Add a new resource module in `resources/` following the same
-sitemap-based pattern. If the agency has an RSS feed, prefer that over sitemap scraping.
+pattern. If the agency has an RSS feed, prefer that over scraping.
 Suggested next additions:
-- Singapore Courts (judiciary.gov.sg) — has RSS
 - Attorney-General's Chambers (agc.gov.sg)
 - Ministry of Finance (mof.gov.sg)
 - Monetary Authority of Singapore (mas.gov.sg)
+
+### `judiciary_news` — Singapore Judiciary
+
+- **Source**: https://www.judiciary.gov.sg/news-and-resources/news
+- **Cadence**: Daily (Tier 1) — ~3–10 new items per week
+- **Discovery**: Sitefinity CMS GetFilteredList AJAX endpoint (`POST /news-and-resources/news/GetFilteredList/`),
+  filtered by year, paginated via `CurrentPage` (0-indexed)
+- **Coverage**: Speeches, media releases, media advisories, appointments — from 2026 onwards.
+  ~30 articles per year (3 pages of 10).
+- **Content**: Full text scraped from `.detail-wrapper .col-md-8` on each detail page
+- **Licensing**: © Government of Singapore, all rights reserved. Content stored but hidden
+  from Datasette default view — accessible via direct SQL/FTS only.
+- **UI approach**: `content_text` hidden; `summary` (AI-generated) is primary search field.
+
+**Discovery endpoint**:
+```
+POST https://www.judiciary.gov.sg/news-and-resources/news/GetFilteredList/
+Content-Type: application/json
+{"model": {"CurrentPage": 0, "SelectedYear": "2026", "SearchKeywords": "", "SelectedCourts": [], "SelectedTopics": [], "SelectedContentTypes": []}}
+```
+Returns JSON `{listPartialView: "<html>"}`. Pagination: increment `CurrentPage` until 0 items returned.
+
+**Scraping notes**:
+- Same User-Agent and delay policy as `mlaw_news`
+- robots.txt: /news/ pages are public government content; no disallow rules for this path
 
 ## Scraping principles
 
