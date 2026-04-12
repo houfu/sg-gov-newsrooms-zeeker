@@ -38,7 +38,8 @@ from urllib.parse import urlparse
 # =============================================================================
 
 BASE_URL = "https://www.mlaw.gov.sg"
-SITEMAP_URL = "https://www.mlaw.gov.sg/sitemap.xml"
+SITEMAP_URL = "https://www.mlaw.gov.sg/sitemap.xml"  # Stale (only up to 2024) — kept for reference
+FEED_URL = "https://www.mlaw.gov.sg/feed.xml"        # Live Atom feed — used for discovery
 NEWS_PREFIX = "/news/"
 
 # Only import articles published from this date onwards
@@ -138,81 +139,128 @@ def parse_date_string(date_str: str) -> Optional[str]:
 
 
 # =============================================================================
-# SITEMAP DISCOVERY
+# ATOM FEED DISCOVERY
 # =============================================================================
 
 
-def discover_news_urls(client: httpx.Client, existing_urls: set) -> List[Dict[str, Any]]:
+def extract_category_from_content(html_content: str) -> str:
     """
-    Parse sitemap.xml and return new /news/ items with lastmod >= START_DATE.
+    Extract news category from the HTML content inside a feed entry.
+    Looks for 'Posted in <a href="/news/category">...' pattern.
+    """
+    soup = BeautifulSoup(html_content, "lxml")
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        if href.startswith("/news/"):
+            path_part = href[len("/news/"):].strip("/")
+            if path_part in NEWS_CATEGORIES:
+                return path_part
+    return "other"
 
-    Returns list of dicts with: source_url, category, lastmod_date
+
+def extract_content_from_feed_html(html_content: str) -> str:
     """
-    click.echo(f"Fetching sitemap: {SITEMAP_URL}")
+    Extract clean article text from the HTML content inside a feed entry.
+    Removes navigation elements, 'Posted in' lines, and metadata noise.
+    """
+    soup = BeautifulSoup(html_content, "lxml")
+
+    # Remove unwanted elements
+    for unwanted in soup.find_all(["nav", "header", "footer", "script", "style", "aside"]):
+        unwanted.decompose()
+
+    # Remove "Posted in" paragraph (category label, not content)
+    for p in soup.find_all("p"):
+        text = p.get_text(strip=True)
+        if text.startswith("Posted in") or text.startswith("Last updated on"):
+            p.decompose()
+
+    parts = []
+    for el in soup.find_all(["p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "td"]):
+        text = el.get_text(strip=True)
+        if text and len(text) > 15:
+            parts.append(text)
+
+    return "\n\n".join(parts)
+
+
+def discover_news_from_feed(client: httpx.Client, existing_urls: set) -> List[Dict[str, Any]]:
+    """
+    Fetch the Atom feed and return new articles published >= START_DATE.
+
+    The feed contains full article content, so we extract it here rather
+    than making a second HTTP request per article.
+
+    Note: Jekyll's feed.xml typically contains the 10 most recent posts.
+    For daily polling this is sufficient; initial historical backfill would
+    need a different approach (scraping the /news/ listing pages).
+
+    Returns list of dicts with: source_url, category, published_date, title, content_text
+    """
+    click.echo(f"Fetching feed: {FEED_URL}")
     try:
-        response = client.get(SITEMAP_URL)
+        response = client.get(FEED_URL)
         response.raise_for_status()
     except httpx.HTTPError as e:
-        click.echo(f"Failed to fetch sitemap: {e}", err=True)
+        click.echo(f"Failed to fetch feed: {e}", err=True)
         return []
 
-    ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    ns = {"atom": "http://www.w3.org/2005/Atom"}
     try:
         root = ElementTree.fromstring(response.content)
     except ElementTree.ParseError as e:
-        click.echo(f"Failed to parse sitemap XML: {e}", err=True)
+        click.echo(f"Failed to parse feed XML: {e}", err=True)
         return []
 
     items = []
-    total_news = 0
     skipped_date = 0
     skipped_existing = 0
 
-    for url_el in root.findall("sm:url", ns):
-        loc = (url_el.findtext("sm:loc", namespaces=ns) or "").strip()
-        lastmod_str = (url_el.findtext("sm:lastmod", namespaces=ns) or "").strip()
-
-        # Only /news/ pages — path must START with /news/ (not /files/news/ etc.)
-        parsed = urlparse(loc)
-        if not parsed.path.startswith(NEWS_PREFIX):
+    for entry in root.findall("atom:entry", ns):
+        # URL
+        link_el = entry.find("atom:link", ns)
+        url = (link_el.get("href") if link_el is not None else "").strip()
+        if not url:
             continue
 
-        # Skip non-HTML files (PDFs, DOCX, images, etc.)
-        SKIP_EXTENSIONS = (".pdf", ".docx", ".doc", ".pptx", ".ppt",
-                           ".xlsx", ".xls", ".jpg", ".jpeg", ".png", ".gif")
-        if parsed.path.lower().endswith(SKIP_EXTENSIONS):
+        # Publication date
+        published_str = (entry.findtext("atom:published", namespaces=ns) or "").strip()
+        try:
+            published_date = datetime.fromisoformat(published_str).date()
+        except ValueError:
+            published_date = None
+
+        # Filter by start date
+        if published_date and published_date < START_DATE:
+            skipped_date += 1
             continue
-
-        # Must have at least one more path segment after /news/ (the category)
-        path_after_news = parsed.path[len(NEWS_PREFIX):].strip("/")
-        if not path_after_news or "/" not in path_after_news:
-            # This is a category index page like /news/press-releases/ — skip
-            continue
-
-        total_news += 1
-
-        # Filter by date
-        if lastmod_str:
-            try:
-                lastmod_date = datetime.fromisoformat(lastmod_str).date()
-                if lastmod_date < START_DATE:
-                    skipped_date += 1
-                    continue
-            except ValueError:
-                pass  # If we can't parse the date, include it anyway
 
         # Skip already-imported URLs
-        if loc in existing_urls:
+        if url in existing_urls:
             skipped_existing += 1
             continue
 
+        # Title
+        title = (entry.findtext("atom:title", namespaces=ns) or "").strip()
+
+        # Content (HTML, escaped inside XML CDATA or text)
+        content_el = entry.find("atom:content", ns)
+        raw_html = (content_el.text or "") if content_el is not None else ""
+
+        # Extract category and clean content from the HTML
+        category = extract_category_from_content(raw_html)
+        content_text = extract_content_from_feed_html(raw_html)
+
         items.append({
-            "source_url": loc,
-            "category": extract_category_from_url(loc),
+            "source_url": url,
+            "category": category,
+            "published_date": published_date.isoformat() if published_date else None,
+            "title": title,
+            "content_text": content_text,
         })
 
     click.echo(
-        f"Sitemap: {total_news} news URLs found. "
+        f"Feed: {len(items) + skipped_date + skipped_existing} entries. "
         f"{skipped_date} before {START_DATE}, {skipped_existing} already in DB, "
         f"{len(items)} new to process."
     )
@@ -388,53 +436,34 @@ def fetch_data(existing_table: Optional[Table]) -> List[Dict[str, Any]]:
         limits=httpx.Limits(max_connections=5, max_keepalive_connections=3),
     ) as client:
 
-        # Phase 1: Discover new URLs from sitemap
-        new_items = discover_news_urls(client, existing_urls)
+        # Phase 1: Discover new articles from Atom feed (includes full content)
+        new_items = discover_news_from_feed(client, existing_urls)
 
         if not new_items:
             click.echo("No new items to process.")
             return []
 
-        # Phase 2: Scrape each article
-        click.echo(f"\nScraping {len(new_items)} articles...")
+        # Phase 2: Build result records (content already extracted from feed)
+        click.echo(f"\nProcessing {len(new_items)} articles from feed...")
         for i, item in enumerate(new_items, 1):
             url = item["source_url"]
             click.echo(f"[{i}/{len(new_items)}] {url}")
 
-            # Circuit breaker
-            if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
-                click.echo(
-                    f"Circuit breaker: {consecutive_failures} consecutive failures. Stopping.",
-                    err=True,
-                )
-                break
-
-            try:
-                article = fetch_article(url, client)
-                consecutive_failures = 0
-
-                result = {
-                    "id": make_id(url),
-                    "source_url": url,
-                    "category": item["category"],
-                    "title": article["title"],
-                    "published_date": article["published_date"],
-                    "content_text": article["content_text"],
-                    "summary": "",  # Filled in phase 3
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                }
-                results.append(result)
-                click.echo(
-                    f"  → {article['title'][:60]} "
-                    f"({article['published_date']}, {len(article['content_text'])} chars)"
-                )
-
-            except Exception as e:
-                consecutive_failures += 1
-                click.echo(f"  → Failed: {e}", err=True)
-                continue
-
-            polite_sleep()
+            result = {
+                "id": make_id(url),
+                "source_url": url,
+                "category": item["category"],
+                "title": item["title"],
+                "published_date": item["published_date"],
+                "content_text": item["content_text"],
+                "summary": "",  # Filled in phase 3
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+            results.append(result)
+            click.echo(
+                f"  → {item['title'][:60]} "
+                f"({item['published_date']}, {len(item['content_text'])} chars)"
+            )
 
     if not results:
         click.echo("No articles successfully scraped.")
