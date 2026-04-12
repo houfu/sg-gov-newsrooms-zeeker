@@ -44,3 +44,21 @@ source_url = "URL to the original page on judiciary.gov.sg"
 summary = "AI-generated summary highlighting key judicial developments (~100 words)"
 content_text = "Full extracted article text (hidden — query directly)"
 created_at = "Timestamp when this record was first imported"
+
+[resource.agc_news]
+description = "Press releases, media statements, speeches, and prosecution updates from the Attorney-General's Chambers Singapore. From 2026 onwards."
+sort_desc = "published_date"
+label_column = "title"
+facets = ["category"]
+size = 25
+fts_fields = ["title", "summary"]
+
+[resource.agc_news.columns]
+id = "Unique identifier (SHA-256 hash of source URL)"
+title = "Title of the press release, statement, or speech"
+published_date = "Publication date in ISO 8601 format (YYYY-MM-DD)"
+category = "Content type: press-release, media-statement, speech, appointment, prosecution, other"
+source_url = "URL to the original page on agc.gov.sg"
+summary = "AI-generated summary highlighting key legal and institutional developments (~100 words)"
+content_text = "Full extracted article text (hidden — query directly)"
+created_at = "Timestamp when this record was first imported"
