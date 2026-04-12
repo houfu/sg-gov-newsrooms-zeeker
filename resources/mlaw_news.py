@@ -31,6 +31,7 @@ from bs4 import BeautifulSoup
 from openai import AsyncOpenAI
 from sqlite_utils.db import Table
 from tenacity import retry, stop_after_attempt, wait_exponential
+from urllib.parse import urlparse
 
 # =============================================================================
 # CONFIGURATION
@@ -171,12 +172,19 @@ def discover_news_urls(client: httpx.Client, existing_urls: set) -> List[Dict[st
         loc = (url_el.findtext("sm:loc", namespaces=ns) or "").strip()
         lastmod_str = (url_el.findtext("sm:lastmod", namespaces=ns) or "").strip()
 
-        # Only /news/ pages (not sub-pages like /about-us/, /e-services/, etc.)
-        if NEWS_PREFIX not in loc:
+        # Only /news/ pages — path must START with /news/ (not /files/news/ etc.)
+        parsed = urlparse(loc)
+        if not parsed.path.startswith(NEWS_PREFIX):
+            continue
+
+        # Skip non-HTML files (PDFs, DOCX, images, etc.)
+        SKIP_EXTENSIONS = (".pdf", ".docx", ".doc", ".pptx", ".ppt",
+                           ".xlsx", ".xls", ".jpg", ".jpeg", ".png", ".gif")
+        if parsed.path.lower().endswith(SKIP_EXTENSIONS):
             continue
 
         # Must have at least one more path segment after /news/ (the category)
-        path_after_news = loc.replace(BASE_URL + NEWS_PREFIX, "").strip("/")
+        path_after_news = parsed.path[len(NEWS_PREFIX):].strip("/")
         if not path_after_news or "/" not in path_after_news:
             # This is a category index page like /news/press-releases/ — skip
             continue
