@@ -62,3 +62,94 @@ source_url = "URL to the original page on agc.gov.sg"
 summary = "AI-generated summary highlighting key legal and institutional developments (~100 words)"
 content_text = "Full extracted article text (hidden — query directly)"
 created_at = "Timestamp when this record was first imported"
+
+[resource.ipos_news]
+description = "News, media releases, speeches, and updates from the Intellectual Property Office of Singapore (IPOS). From 2026 onwards."
+sort_desc = "published_date"
+label_column = "title"
+facets = ["category"]
+size = 25
+fts_fields = ["title", "summary"]
+
+[resource.ipos_news.columns]
+id = "Unique identifier (SHA-256 hash of source URL)"
+title = "Title of the news item, media release, or speech"
+published_date = "Publication date in ISO 8601 format (YYYY-MM-DD)"
+category = "Content type: media-release, speech, insights, update, other"
+source_url = "URL to the original page on ipos.gov.sg"
+summary = "AI-generated summary highlighting key IP and innovation developments (~100 words)"
+content_text = "Full extracted article text (hidden — query directly)"
+created_at = "Timestamp when this record was first imported"
+
+[resource.ccs_news]
+description = "Announcements, media releases, and forum letter replies from the Competition and Consumer Commission of Singapore (CCCS). From 2026 onwards."
+sort_desc = "published_date"
+label_column = "title"
+facets = ["category"]
+size = 25
+fts_fields = ["title", "summary"]
+
+[resource.ccs_news.columns]
+id = "Unique identifier (SHA-256 hash of source URL)"
+title = "Title of the announcement, media release, or forum letter reply"
+published_date = "Publication date in ISO 8601 format (YYYY-MM-DD)"
+category = "Content type: media-release, announcement, forum-letter-reply"
+source_url = "URL to the original page on ccs.gov.sg"
+summary = "AI-generated summary highlighting key competition and consumer protection developments (~100 words)"
+content_text = "Full extracted article text (hidden — query directly)"
+created_at = "Timestamp when this record was first imported"
+
+[resource.acra_news]
+description = "News announcements, press releases, and speeches from the Accounting and Corporate Regulatory Authority (ACRA). From 2026 onwards."
+sort_desc = "published_date"
+label_column = "title"
+facets = ["category"]
+size = 25
+fts_fields = ["title", "summary"]
+
+[resource.acra_news.columns]
+id = "Unique identifier (SHA-256 hash of source URL)"
+title = "Title of the news announcement, press release, or speech"
+published_date = "Publication date in ISO 8601 format (YYYY-MM-DD)"
+category = "Content type: press-release, speech, newsletter, announcement, other"
+source_url = "URL to the original page on acra.gov.sg"
+summary = "AI-generated summary highlighting key regulatory and business developments (~100 words)"
+content_text = "Full extracted article text (hidden — query directly)"
+created_at = "Timestamp when this record was first imported"
+
+[resource.mom_news]
+description = "Press releases from the Ministry of Manpower Singapore — workplace safety, employment, foreign workforce, and labour policies. From 2026 onwards."
+sort_desc = "published_date"
+label_column = "title"
+facets = ["category"]
+size = 25
+fts_fields = ["title", "summary"]
+
+[resource.mom_news.columns]
+id = "Unique identifier (SHA-256 hash of source URL)"
+title = "Title of the press release"
+published_date = "Publication date in ISO 8601 format (YYYY-MM-DD)"
+category = "Topic area: workplace-safety, foreign-workforce, statistics, employment-standards, general"
+source_url = "URL to the original page on mom.gov.sg"
+summary = "AI-generated summary highlighting key workforce and employment developments (~100 words)"
+content_text = "Full extracted article text (hidden — query directly)"
+created_at = "Timestamp when this record was first imported"
+
+[resource.pdpc_news]
+description = "Media releases, speeches, and advisories from the Personal Data Protection Commission Singapore (PDPC). From 2026 onwards."
+sort_desc = "published_date"
+label_column = "title"
+facets = ["category"]
+size = 25
+fts_fields = ["title", "summary"]
+
+[resource.pdpc_news.columns]
+id = "Unique identifier (SHA-256 hash of source URL)"
+title = "Title of the press release, speech, or advisory"
+published_date = "Publication date in ISO 8601 format (YYYY-MM-DD)"
+category = "Content type: media-release, speech, forum-reply, article-clarification, advertorial"
+source_url = "URL to the original page on pdpc.gov.sg"
+summary = "AI-generated summary highlighting key data protection and PDPA developments (~100 words)"
+content_text = "Full extracted article text (hidden — query directly)"
+created_at = "Timestamp when this record was first imported"
+
