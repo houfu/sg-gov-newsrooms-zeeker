@@ -28,12 +28,21 @@ from openai import AsyncOpenAI
 from sqlite_utils.db import Table
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+try:
+    from ._isomer import fetch_isomer_listing_dates
+except ImportError:
+    from pathlib import Path as _P
+    import sys as _sys
+    _sys.path.insert(0, str(_P(__file__).resolve().parent))
+    from _isomer import fetch_isomer_listing_dates
+
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
 
 BASE_URL = "https://www.acra.gov.sg"
 SITEMAP_URL = "https://www.acra.gov.sg/sitemap.xml"
+LISTING_URL = "https://www.acra.gov.sg/news-events/news-announcements/"
 NEWS_PREFIX = "/news-events/news-announcements/"
 
 # Only keep articles published from this date onwards
@@ -313,6 +322,9 @@ def fetch_data(existing_table: Optional[Table]) -> List[Dict[str, Any]]:
     ) as client:
         new_urls = discover_urls_from_sitemap(client, existing_urls)
 
+        # Fetch publication dates from Isomer listing page RSC payload
+        listing_dates = fetch_isomer_listing_dates(client, LISTING_URL, "/news-events/news-announcements/")
+
         if not new_urls:
             click.echo("No new URLs to process.")
             return []
@@ -333,8 +345,8 @@ def fetch_data(existing_table: Optional[Table]) -> List[Dict[str, Any]]:
                     break
                 continue
 
-            # Filter by date
-            pub_date = article.get("published_date")
+            # Filter by date — prefer Isomer listing date over page scrape
+            pub_date = listing_dates.get(url) or article.get("published_date")
             if pub_date:
                 try:
                     if date.fromisoformat(pub_date) < START_DATE:

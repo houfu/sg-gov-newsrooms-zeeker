@@ -5,16 +5,17 @@ title = "SG Government Newsrooms"
 description = "News and announcements from Singapore government ministries and judiciary — speeches, press releases, parliamentary replies, and announcements."
 license = "All rights reserved"
 license_url = "https://www.mlaw.gov.sg/terms-of-use/"
-source = "Singapore Government Ministries"
-source_url = "https://www.mlaw.gov.sg/news/"
+source = "Singapore Government Agencies"
+source_url = "https://data.zeeker.sg/"
 
 [resource.mlaw_news]
 description = "News and announcements from the Ministry of Law Singapore — press releases, speeches, parliamentary speeches, and announcements from 2026."
+source_url = "https://www.mlaw.gov.sg/news/"
 sort_desc = "published_date"
 label_column = "title"
 facets = ["category"]
 size = 25
-fts_fields = ["title", "summary"]
+fts_fields = ["title", "summary", "content_text"]
 
 [resource.mlaw_news.columns]
 id = "Unique identifier (SHA-256 hash of source URL)"
@@ -28,6 +29,7 @@ created_at = "Timestamp when this record was first imported"
 
 [resource.judiciary_news]
 description = "News, speeches, and media releases from the Singapore Judiciary — Supreme Court, State Courts, Family Justice Courts, and related tribunals. From 2026 onwards."
+source_url = "https://www.judiciary.gov.sg/news-and-resources/news"
 sort_desc = "published_date"
 label_column = "title"
 facets = ["content_type", "courts"]
@@ -47,11 +49,12 @@ created_at = "Timestamp when this record was first imported"
 
 [resource.agc_news]
 description = "Press releases, media statements, speeches, and prosecution updates from the Attorney-General's Chambers Singapore. From 2026 onwards."
+source_url = "https://www.agc.gov.sg/newsroom/"
 sort_desc = "published_date"
 label_column = "title"
 facets = ["category"]
 size = 25
-fts_fields = ["title", "summary"]
+fts_fields = ["title", "summary", "content_text"]
 
 [resource.agc_news.columns]
 id = "Unique identifier (SHA-256 hash of source URL)"
@@ -65,11 +68,12 @@ created_at = "Timestamp when this record was first imported"
 
 [resource.ipos_news]
 description = "News, media releases, speeches, and updates from the Intellectual Property Office of Singapore (IPOS). From 2026 onwards."
+source_url = "https://www.ipos.gov.sg/news/news-collection/"
 sort_desc = "published_date"
 label_column = "title"
 facets = ["category"]
 size = 25
-fts_fields = ["title", "summary"]
+fts_fields = ["title", "summary", "content_text"]
 
 [resource.ipos_news.columns]
 id = "Unique identifier (SHA-256 hash of source URL)"
@@ -83,11 +87,12 @@ created_at = "Timestamp when this record was first imported"
 
 [resource.ccs_news]
 description = "Announcements, media releases, and forum letter replies from the Competition and Consumer Commission of Singapore (CCCS). From 2026 onwards."
+source_url = "https://www.ccs.gov.sg/media-and-events/newsroom/announcements-and-media-releases/"
 sort_desc = "published_date"
 label_column = "title"
 facets = ["category"]
 size = 25
-fts_fields = ["title", "summary"]
+fts_fields = ["title", "summary", "content_text"]
 
 [resource.ccs_news.columns]
 id = "Unique identifier (SHA-256 hash of source URL)"
@@ -101,11 +106,12 @@ created_at = "Timestamp when this record was first imported"
 
 [resource.acra_news]
 description = "News announcements, press releases, and speeches from the Accounting and Corporate Regulatory Authority (ACRA). From 2026 onwards."
+source_url = "https://www.acra.gov.sg/news-events/news-announcements/"
 sort_desc = "published_date"
 label_column = "title"
 facets = ["category"]
 size = 25
-fts_fields = ["title", "summary"]
+fts_fields = ["title", "summary", "content_text"]
 
 [resource.acra_news.columns]
 id = "Unique identifier (SHA-256 hash of source URL)"
@@ -119,11 +125,12 @@ created_at = "Timestamp when this record was first imported"
 
 [resource.mom_news]
 description = "Press releases from the Ministry of Manpower Singapore — workplace safety, employment, foreign workforce, and labour policies. From 2026 onwards."
+source_url = "https://www.mom.gov.sg/newsroom/press-releases"
 sort_desc = "published_date"
 label_column = "title"
 facets = ["category"]
 size = 25
-fts_fields = ["title", "summary"]
+fts_fields = ["title", "summary", "content_text"]
 
 [resource.mom_news.columns]
 id = "Unique identifier (SHA-256 hash of source URL)"
@@ -137,11 +144,12 @@ created_at = "Timestamp when this record was first imported"
 
 [resource.pdpc_news]
 description = "Media releases, speeches, and advisories from the Personal Data Protection Commission Singapore (PDPC). From 2026 onwards."
+source_url = "https://www.pdpc.gov.sg/news-and-events/press-room"
 sort_desc = "published_date"
 label_column = "title"
 facets = ["category"]
 size = 25
-fts_fields = ["title", "summary"]
+fts_fields = ["title", "summary", "content_text"]
 
 [resource.pdpc_news.columns]
 id = "Unique identifier (SHA-256 hash of source URL)"

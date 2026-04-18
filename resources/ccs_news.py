@@ -27,6 +27,14 @@ from openai import AsyncOpenAI
 from sqlite_utils.db import Table
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+try:
+    from ._isomer import parse_isomer_listing_dates, parse_isomer_listing_items
+except ImportError:
+    from pathlib import Path as _P
+    import sys as _sys
+    _sys.path.insert(0, str(_P(__file__).resolve().parent))
+    from _isomer import parse_isomer_listing_dates, parse_isomer_listing_items
+
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
@@ -43,10 +51,6 @@ REQUEST_DELAY_JITTER = 0.5
 REQUEST_TIMEOUT = 30.0
 MAX_CONSECUTIVE_FAILURES = 5
 MAX_RETRIES = 3
-
-# Pagination
-INCREMENTAL_STOP_THRESHOLD = 5
-MAX_PAGES = 60  # Safety limit (48 pages known)
 
 # LLM concurrency
 _LLM_SEMAPHORE = asyncio.Semaphore(3)
@@ -121,97 +125,49 @@ def parse_date_string(date_str: str) -> Optional[str]:
 
 def discover_urls_from_listing(client: httpx.Client, existing_urls: set) -> List[Dict[str, Any]]:
     """
-    Paginate through CCCS news listing pages and extract article metadata.
+    Extract article metadata from Isomer RSC payload on the listing page.
 
-    Returns list of dicts with: source_url, title, published_date, category
+    Isomer embeds all article data (path, date, title, category) in the React
+    Server Component payload. No pagination needed — all items are on page 1.
     """
+    click.echo(f"Fetching listing page: {LISTING_URL}")
+    try:
+        response = client.get(LISTING_URL)
+        response.raise_for_status()
+    except httpx.HTTPError as e:
+        click.echo(f"Failed to fetch listing page: {e}", err=True)
+        return []
+
+    items = parse_isomer_listing_items(
+        response.text,
+        "/media-and-events/newsroom/announcements-and-media-releases/",
+    )
+    click.echo(f"RSC payload: {len(items)} articles found.")
+
     all_items: List[Dict[str, Any]] = []
-    consecutive_known = 0
-    page = 1
-
-    while page <= MAX_PAGES:
-        url = f"{LISTING_URL}?page={page}" if page > 1 else LISTING_URL
-        click.echo(f"Fetching listing page {page}: {url}")
-
+    skipped_old = 0
+    for item in items:
+        url = f"{BASE_URL}{item['path']}"
+        if url in existing_urls:
+            continue
+        # Filter by START_DATE before scraping detail pages
         try:
-            response = client.get(url)
-            if response.status_code == 404:
-                break
-            response.raise_for_status()
-        except httpx.HTTPError as e:
-            click.echo(f"Failed to fetch listing page {page}: {e}", err=True)
-            break
-
-        soup = BeautifulSoup(response.content, "lxml")
-
-        # Find article links under the newsroom path
-        items_found = 0
-        for link in soup.select("a[href*='/media-and-events/newsroom/announcements-and-media-releases/']"):
-            href = link.get("href", "")
-            if not href:
+            if date.fromisoformat(item["date"]) < START_DATE:
+                skipped_old += 1
                 continue
+        except (ValueError, KeyError):
+            pass
+        all_items.append({
+            "source_url": url,
+            "title": item["title"],
+            "published_date": item["date"],
+            "category": item["category"],
+        })
 
-            # Resolve relative URLs
-            if href.startswith("/"):
-                href = f"{BASE_URL}{href}"
-
-            # Skip the index page itself
-            clean = href.rstrip("/")
-            if clean == f"{BASE_URL}/media-and-events/newsroom/announcements-and-media-releases":
-                continue
-
-            title = link.get_text(strip=True)
-            if not title or len(title) < 5:
-                continue
-
-            items_found += 1
-
-            if href in existing_urls:
-                consecutive_known += 1
-                if consecutive_known >= INCREMENTAL_STOP_THRESHOLD:
-                    click.echo(
-                        f"Stopping: {consecutive_known} consecutive known items on page {page}"
-                    )
-                    return all_items
-                continue
-            else:
-                consecutive_known = 0
-
-            # Extract date and category from surrounding context
-            parent = link.find_parent(["li", "div", "article"])
-            listing_date = None
-            listing_category = ""
-            if parent:
-                text = parent.get_text(" ", strip=True)
-                m = re.search(
-                    r"(\d{1,2}\s+(?:January|February|March|April|May|June|July|August|"
-                    r"September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|"
-                    r"Jul|Aug|Sep|Oct|Nov|Dec)\s+20\d{2})",
-                    text,
-                )
-                if m:
-                    listing_date = parse_date_string(m.group(1))
-
-                for label in ["Media Releases", "Announcements", "Forum Letter Replies"]:
-                    if label in text:
-                        listing_category = label
-                        break
-
-            all_items.append({
-                "source_url": href,
-                "title": title,
-                "published_date": listing_date,
-                "category": listing_category,
-            })
-
-        if items_found == 0:
-            click.echo(f"No items found on page {page} — stopping.")
-            break
-
-        page += 1
-        polite_sleep()
-
-    click.echo(f"Discovered {len(all_items)} new article URLs across {page - 1} pages.")
+    click.echo(
+        f"Discovered {len(all_items)} new article URLs"
+        f" ({skipped_old} skipped, before {START_DATE})."
+    )
     return all_items
 
 
@@ -385,7 +341,7 @@ def fetch_data(existing_table: Optional[Table]) -> List[Dict[str, Any]]:
                     break
                 continue
 
-            pub_date = article.get("published_date") or item.get("published_date")
+            pub_date = item.get("published_date") or article.get("published_date")
             if pub_date:
                 try:
                     if date.fromisoformat(pub_date) < START_DATE:
