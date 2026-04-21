@@ -28,12 +28,12 @@ from sqlite_utils.db import Table
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 try:
-    from ._isomer import parse_isomer_listing_dates, parse_isomer_listing_items
+    from ._isomer import parse_isomer_listing_dates, parse_isomer_listing_items, normalize_url
 except ImportError:
     from pathlib import Path as _P
     import sys as _sys
     _sys.path.insert(0, str(_P(__file__).resolve().parent))
-    from _isomer import parse_isomer_listing_dates, parse_isomer_listing_items
+    from _isomer import parse_isomer_listing_dates, parse_isomer_listing_items, normalize_url
 
 # =============================================================================
 # CONFIGURATION
@@ -150,7 +150,7 @@ def discover_urls_from_listing(client: httpx.Client, existing_urls: set) -> List
     skipped_old = 0
     for item in items:
         url = f"{BASE_URL}{item['path']}"
-        if url in existing_urls:
+        if normalize_url(url) in existing_urls:
             continue
         # Filter by START_DATE before scraping detail pages
         try:
@@ -306,7 +306,7 @@ def fetch_data(existing_table: Optional[Table]) -> List[Dict[str, Any]]:
     """
     existing_urls: set = set()
     if existing_table:
-        existing_urls = {row["source_url"] for row in existing_table.rows}
+        existing_urls = {normalize_url(row["source_url"]) for row in existing_table.rows}
         click.echo(f"Existing records: {len(existing_urls)}")
 
     results: List[Dict[str, Any]] = []

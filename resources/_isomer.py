@@ -8,6 +8,13 @@ import click
 import httpx
 
 
+def normalize_url(url: str) -> str:
+    # Isomer RSC payload paths have historically flipped between with/without
+    # trailing slash; canonicalize for dedup so a format change can't create
+    # duplicate rows for the same article.
+    return url.rstrip("/")
+
+
 def parse_isomer_listing_dates(html: str) -> Dict[str, str]:
     """Extract {path: ISO date} from Isomer RSC payload in listing page HTML."""
     dates: Dict[str, str] = {}
