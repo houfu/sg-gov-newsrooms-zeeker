@@ -15,7 +15,7 @@ sort_desc = "published_date"
 label_column = "title"
 facets = ["category"]
 size = 25
-fts_fields = ["title", "summary", "content_text"]
+fts_fields = ["title", "summary"]
 
 [resource.mlaw_news.columns]
 id = "Unique identifier (SHA-256 hash of source URL)"
@@ -34,7 +34,7 @@ sort_desc = "published_date"
 label_column = "title"
 facets = ["content_type", "courts"]
 size = 25
-fts_fields = ["title", "summary", "content_text"]
+fts_fields = ["title", "summary"]
 
 [resource.judiciary_news.columns]
 id = "Unique identifier (SHA-256 hash of source URL)"
@@ -54,7 +54,7 @@ sort_desc = "published_date"
 label_column = "title"
 facets = ["category"]
 size = 25
-fts_fields = ["title", "summary", "content_text"]
+fts_fields = ["title", "summary"]
 
 [resource.agc_news.columns]
 id = "Unique identifier (SHA-256 hash of source URL)"
@@ -73,7 +73,7 @@ sort_desc = "published_date"
 label_column = "title"
 facets = ["category"]
 size = 25
-fts_fields = ["title", "summary", "content_text"]
+fts_fields = ["title", "summary"]
 
 [resource.ipos_news.columns]
 id = "Unique identifier (SHA-256 hash of source URL)"
@@ -92,7 +92,7 @@ sort_desc = "published_date"
 label_column = "title"
 facets = ["category"]
 size = 25
-fts_fields = ["title", "summary", "content_text"]
+fts_fields = ["title", "summary"]
 
 [resource.ccs_news.columns]
 id = "Unique identifier (SHA-256 hash of source URL)"
@@ -111,7 +111,7 @@ sort_desc = "published_date"
 label_column = "title"
 facets = ["category"]
 size = 25
-fts_fields = ["title", "summary", "content_text"]
+fts_fields = ["title", "summary"]
 
 [resource.acra_news.columns]
 id = "Unique identifier (SHA-256 hash of source URL)"
@@ -130,7 +130,7 @@ sort_desc = "published_date"
 label_column = "title"
 facets = ["category"]
 size = 25
-fts_fields = ["title", "summary", "content_text"]
+fts_fields = ["title", "summary"]
 
 [resource.mom_news.columns]
 id = "Unique identifier (SHA-256 hash of source URL)"
@@ -149,7 +149,7 @@ sort_desc = "published_date"
 label_column = "title"
 facets = ["category"]
 size = 25
-fts_fields = ["title", "summary", "content_text"]
+fts_fields = ["title", "summary"]
 
 [resource.pdpc_news.columns]
 id = "Unique identifier (SHA-256 hash of source URL)"
