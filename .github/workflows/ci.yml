@@ -1,0 +1,32 @@
+# Smoke-test CI gate for the zeeker resource collection.
+#
+# Runs the tests in tests/ — currently just tests/test_smoke.py, which imports
+# every resources/*.py module and asserts the entry points zeeker's builder
+# needs (fetch_data, and fetch_fragments_data for fragment-enabled resources).
+# Cheap (no network I/O), so it runs on every push to main and every PR.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # v3
+        with:
+          version: "0.11.14"
+
+      - name: Install dependencies (from uv.lock)
+        run: uv sync --locked
+
+      - name: Run smoke tests
+        run: uv run pytest -v
